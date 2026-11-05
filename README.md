@@ -154,7 +154,7 @@ scripts/              ai-worktree.mjs, check-model-policy.mjs
 
 ## 🗺️ Roadmap
 
-Honest status. Items marked 🚧 are built in the source repo and being ported here; 🧭 are not built yet.
+Honest status. ✅ ships in this repo; 🚧 is built in the source repo and being ported here; 🧭 is not built yet.
 
 | Status | AI-native capability | Why it matters |
 |:---:|---|---|
@@ -163,13 +163,31 @@ Honest status. Items marked 🚧 are built in the source repo and being ported h
 | 🚧 | **Status dashboard** — phase status, check evidence, Actions view | One place to see what the agents did and what passed |
 | 🚧 | **Bootstrap for new projects** — generic init that strips the demo and wires the framework | Today you edit `AGENTS.md` by hand |
 | 🚧 | **Production runbook** — pinned dependencies, backup and restore rehearsal | Safe path from prototype to something you run |
-| 🧭 | **Agent observability** — OpenTelemetry traces for sessions, tool calls, cost | Both CLIs support OTel export; needs a privacy-reviewed destination |
+| ✅ | **Agent observability** — opt-in, local-only OpenTelemetry setup ([guide](docs/ai-engineering/OBSERVABILITY.md)) | Sessions, tool calls and cost without sending data off the machine |
 | 🧭 | **Agent memory** — durable cross-session memory with provenance | Designed in ADR 0002, deliberately deferred until it can be made safe |
 | 🧭 | **Prompt-injection red-team evals** — hostile issue text, web pages, tool output | The authority-order rule exists; it needs adversarial tests |
 | 🧭 | **Token and cost budgets** — per-task ceilings enforced by policy | Model routing picks the model; nothing yet caps the spend |
 | 🧭 | **AI review gate** — an independent agent reviews every diff before merge | Separates author from reviewer, the way humans do |
-| 🧭 | **Devcontainer / reproducible env** — one-command, identical agent sandbox | Makes the sandbox the same on every machine and in CI |
+| ✅ | **Devcontainer / reproducible env** — [`.devcontainer/`](.devcontainer/devcontainer.json) with Node 22, `npm ci` and the secret-scan hook | Same environment on every machine. No network firewall yet, so it is not a hard sandbox |
 | 🧭 | **Skill registry with versioning** — pin and audit third-party skills like ponytail | Skills are code that steers agents; treat them as supply chain |
+
+---
+
+## 🔌 Works with ECC
+
+ai-forge does not depend on [ECC (Everything Claude Code)](https://github.com/affaan-m/ECC), but it pairs well with it. If you install the ECC plugin, these skills cover several roadmap gaps. Names are taken from the plugin's skill list; check each skill's behaviour before relying on it.
+
+| Roadmap gap | ECC skills |
+|---|---|
+| Agent evals | `ecc:eval-harness`, `ecc:agent-eval` |
+| Prompt-injection and agent hardening | `ecc:agent-security-hardening`, `ecc:safety-guard`, `ecc:mcp-dependency-review` |
+| Skill registry and audit | `ecc:skill-comply`, `ecc:skill-stocktake`, `ecc:skill-health` |
+| Cost budgets | `ecc:cost-tracking`, `ecc:token-budget-advisor` |
+| AI review gate | `ecc:code-review`, `ecc:review-pr`, `ecc:orch-review` |
+| Agent memory | `ecc:unified-memory` |
+| Repo readiness audit | `ecc:harness-audit` |
+
+ECC is large. ai-forge's ponytail rule applies: install only what you use.
 
 ---
 

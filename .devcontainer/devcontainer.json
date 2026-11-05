@@ -1,0 +1,16 @@
+{
+  "name": "ai-forge",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "npm ci && git config core.hooksPath .githooks",
+  "remoteEnv": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["anthropic.claude-code", "astro-build.astro-vscode"]
+    }
+  }
+}

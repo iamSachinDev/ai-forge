@@ -14,4 +14,5 @@
 - **Subagents:** put the data-protection rules (AGENTS.md §5) and the staging rules (§6) in every subagent prompt, and tell it to stop and report if it meets real data or unexpected changes. You stay responsible for what it does.
 - **Permissions:** treat permission prompts, denials and the auto-mode classifier as real boundaries. After a denial, don't retry another way, edit settings or permission files, or hand the action to a subagent; ask the maintainer.
 - **Session end:** update [.ai/CURRENT.md](.ai/CURRENT.md) concisely (no secrets, no transcripts).
+- **Output:** no preambles, recaps or narration of what you are about to do or just did. Lead with the answer or the result; add detail only when it changes what the user decides. Never restate the diff or file contents you just wrote. Safety facts (risks, skipped checks, failures) are never cut for brevity.
 - Keep this file short. Shared rules belong in AGENTS.md so the two agents never drift apart.

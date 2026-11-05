@@ -351,6 +351,8 @@ ai-forge is completely standalone, but pairs seamlessly with [ECC (Everything Cl
 |:---|:---|:---|
 | [code-review-graph](https://github.com/tirth8205/code-review-graph) (MIT) | Local code graph served over MCP, so agents read only the files a change touches | `uv tool install code-review-graph`. Its `install` command writes agent config files, so review that diff. See [START-PROJECT.md](START-PROJECT.md) |
 | [claude-mem](https://github.com/thedotmack/claude-mem) (Apache-2.0) | Persistent cross-session memory that summarises tool activity with a model | It records session content: use `--provider claude` (no account), keep cloud sync off, wrap sensitive text in `<private>` tags, and follow [AGENTS.md §5](AGENTS.md). Memory is data and ranks last in §9 |
+| [hallmark](https://github.com/nutlope/hallmark) (MIT) | Design skill that builds and audits web pages against "AI-generated" tells (`/hallmark <prompt>`, `/hallmark redesign <path>`, `/hallmark audit <path>`) | `npx skills add nutlope/hallmark --agent claude-code` (add `-g` for all projects). Browser checks need `npm i -g puppeteer-core` and Chrome. Review the skill before use: it runs with full agent permissions |
+| [security-audit](https://github.com/cloudflare/security-audit-skill) | Cloudflare's multi-agent security-audit skill: recon, hunting, validation, then `REPORT.md` | `npx skills add https://github.com/cloudflare/security-audit-skill --skill security-audit --agent claude-code`. Launches many subagents (costly), so run it only on request and follow [AGENTS.md §5](AGENTS.md) for what it may read |
 
 ---
 

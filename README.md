@@ -1,189 +1,220 @@
-# ai-forge
+<div align="center">
 
-> The AI engineering OS for multi-agent software development.
+# ⚡ ai-forge
+
+### The AI engineering OS for multi-agent software development
 
 [![CI](https://github.com/iamSachinDev/ai-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/iamSachinDev/ai-forge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js >=22.22](https://img.shields.io/badge/node-%3E%3D22.22.0-brightgreen)](package.json)
+[![Ponytail](https://img.shields.io/badge/code-ponytail-blueviolet)](https://github.com/dietrichgebert/ponytail)
+
+**Run Claude Code and Codex safely together — without stepping on each other.**
+
+[Get started](#-quick-start) · [How it works](#-how-it-works) · [Docs](docs/ai-engineering/)
+
+</div>
 
 ---
 
-**ai-forge** is a production-ready template and reference implementation for running Claude Code and Codex safely together on the same codebase. It solves the hard parts: keeping agents out of each other's work, enforcing code quality gates, routing tasks to the right model, and giving every agent the same ground truth — without any cloud dependency.
+## The problem
 
-Clone it, adapt the demo app to your project, and ship with the full framework already in place.
+Running two AI coding agents on the same repo is chaos. They overwrite each other's work, follow different rules, write bloated code, and break the build. There's no shared source of truth, no isolation, no quality gate.
 
----
+**ai-forge fixes all of that.**
 
-## What's inside
-
-| Layer | What it does |
-|---|---|
-| **Multi-agent worktrees** | One git branch + worktree per agent task. Agents never share a working tree. `npm run ai:worktree -- new \| list \| handoff \| remove` |
-| **Shared agent rules** | `AGENTS.md` is the single source of truth for both Claude Code and Codex — no config drift between agents |
-| **Spec Kit 1.2.1** | Feature specs with requirement IDs, constitution, and slash-command workflow: `/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, `/speckit-implement` |
-| **Guardrails** | `settings.json` deny/ask/allow rules, Bash sandbox, pre-commit secret scan via gitleaks, CI pipeline |
-| **Model routing** | `model-policy.yaml` + Conftest enforcement — routes tasks to the right model by capability |
-| **Serena MCP** | Read-only semantic code navigation for both agents (no write access) |
-| **Code minimalism** | [Ponytail](https://github.com/dietrichgebert/ponytail) discipline baked into every session — the smallest complete change, always |
-| **Demo app** | Working Astro 7.4 + React 19.3 app to exercise the full framework in a real build |
+It's a production-ready template that gives Claude Code and Codex a shared operating system: isolated worktrees, one rule file both agents read, a spec-driven workflow, and a code quality gate baked into every session. Clone it, drop in your project, and both agents work safely from day one.
 
 ---
 
-## Quick start
+## ✨ What you get
+
+| | Feature | What it means |
+|---|---|---|
+| 🌿 | **Multi-agent worktrees** | Every agent task gets its own isolated git branch + worktree. No shared state, no conflicts. |
+| 📋 | **One rule file** | `AGENTS.md` is the single source of truth for Claude Code and Codex. No config drift. |
+| 📐 | **Spec Kit 1.2.1** | Feature specs with requirement IDs and a full slash-command workflow — spec before code, always. |
+| 🛡️ | **Guardrails** | Deny/ask/allow rules, Bash sandbox, pre-commit secret scan, and a CI pipeline that blocks bad pushes. |
+| 🧭 | **Model routing** | Policy-driven task routing — the right model for the right job, enforced by Conftest. |
+| 🔭 | **Serena MCP** | Read-only semantic code navigation for both agents. They see the codebase; they can't corrupt it. |
+| ✂️ | **Ponytail gate** | Every code change passes through the minimalism ladder. No bloat, no over-engineering — ever. |
+| 🚀 | **Demo app** | A working Astro 7.4 + React 19.3 app to exercise the full framework in a real build pipeline. |
+
+---
+
+## ⚡ Quick start
 
 ```bash
-# 1. Clone
+# Clone and install
 git clone git@github.com:iamSachinDev/ai-forge.git my-project
 cd my-project
-
-# 2. Install dependencies
 npm ci
 
-# 3. Enable the pre-commit hook
+# Enable the pre-commit secret scan hook
 git config core.hooksPath .githooks
 
-# 4. Verify the framework
-npm run build          # Astro check + static build — should exit 0
-npm test               # Unit tests
-gitleaks dir --redact -v --no-banner .   # Secret scan
+# Verify everything works
+npm run build          # Astro check + static build
+gitleaks dir --redact -v --no-banner .
 ```
 
-Then open `AGENTS.md` and replace §1 (Project) and §3 (Architecture) with your app's details.
+Then open `AGENTS.md` and replace **§1 (Project)** and **§3 (Architecture)** with your app's details. That's the only customisation needed to start.
 
 ---
 
-## Multi-agent workflow
+## 🔄 How it works
 
-Each agent gets its own isolated branch and worktree:
+### Multi-agent isolation
+
+Each agent gets its own branch and worktree — they never touch the same files at the same time:
+
+```
+main  ──────────────────────────────────────────► merge
+        │                      │
+        ▼                      ▼
+ ai/claude/feature-a    ai/codex/feature-b
+ (worktree A)           (worktree B)
+```
 
 ```bash
-# Start a new task (creates branch ai/<agent>/<task> and worktree ../ai-forge-wt/<agent>-<task>)
-npm run ai:worktree -- new my-feature --agent claude
+# Claude starts a task
+npm run ai:worktree -- new auth-flow --agent claude
 
-# List active tasks and owners
-npm run ai:worktree -- list
+# Codex picks up a different task simultaneously
+npm run ai:worktree -- new data-layer --agent codex
 
-# Hand off to another agent
-npm run ai:worktree -- handoff my-feature --from claude --to codex
+# Hand a task from one agent to another
+npm run ai:worktree -- handoff auth-flow --from claude --to codex
 
 # Clean up after merge
-npm run ai:worktree -- remove my-feature
+npm run ai:worktree -- remove auth-flow
 ```
 
-See [.ai/runbooks/handoff.md](.ai/runbooks/handoff.md) for the full handoff protocol.
+### Spec-driven development
+
+Features start with a spec, not a prompt:
+
+```
+/speckit-specify    →  specs/NNN-feature/spec.md   (requirements + acceptance criteria)
+/speckit-plan       →  plan.md                      (design decisions + data flow)
+/speckit-tasks      →  tasks.md                     (dependency-ordered task list)
+/speckit-implement  →  code                         (executes every task)
+/speckit-converge   →  gaps filled                  (finds and completes missing work)
+```
+
+> Codex users: replace `/` with `$` — `$speckit-specify`, etc.
+
+### Code quality gate — ponytail
+
+Before writing a single line, every agent climbs the ladder:
+
+```
+1. Does this need to exist?          →  skip if not
+2. Already in the codebase?          →  reuse it
+3. Standard library or platform?     →  use it
+4. Installed dependency?             →  use it
+5. One line?                         →  one line
+6. Otherwise                         →  minimum that works
+```
+
+Switch modes in Claude Code: `/ponytail lite` · `/ponytail full` · `/ponytail ultra`
 
 ---
 
-## Spec-driven development
-
-Every feature starts with a spec, not code:
+## 🏗️ Repository layout
 
 ```
-/speckit-specify   → creates specs/NNN-feature-name/spec.md
-/speckit-plan      → generates implementation design
-/speckit-tasks     → produces dependency-ordered tasks.md
-/speckit-implement → executes all tasks
-/speckit-converge  → finds and fills any gaps
-```
-
-Codex users: prefix with `$` instead of `/`.
-
----
-
-## Code quality gate — ponytail
-
-Every agent session runs under the [ponytail](https://github.com/dietrichgebert/ponytail) discipline (§11 of `AGENTS.md`). Before writing any code, agents must climb the minimalism ladder:
-
-1. Does this need to exist?
-2. Already in the codebase? Use it.
-3. Standard library? Use it.
-4. Installed dependency? Use it.
-5. One line? One line.
-6. Otherwise: the minimum that works.
-
-Claude Code users can switch levels: `/ponytail lite`, `/ponytail full` (default), `/ponytail ultra`.
-
----
-
-## Framework phases
-
-The framework was built in 7 phases, each documented in `docs/ai-engineering/`:
-
-| Phase | What it delivers |
-|---|---|
-| 2 | Shared `AGENTS.md` rules, `.ai/` knowledge base |
-| 3 | Spec Kit 1.2.1, proposed constitution, first feature spec |
-| 4 | Worktree helper, handoff runbook, multi-agent isolation |
-| 5 | Claude Code guardrails, Codex profile, pre-commit hook, CI |
-| 6 | Serena MCP (read-only), MCP registry, memory lifecycle rules |
-| 7 | Model routing policy, capability catalog, Conftest enforcement |
-| + | Ponytail code minimalism (this release) |
-
----
-
-## Repository layout
-
-```
-.ai/                    # Agent knowledge base (INDEX, CONTEXT, CURRENT, tasks, decisions)
-.claude/
-  settings.json         # Claude Code deny/ask/allow rules + sandbox
-  skills/
-    ponytail/           # Code minimalism skill (/ponytail command)
-    speckit-*/          # Spec Kit slash commands
-.codex/                 # Codex profile and command rules
-.github/                # CI workflows (build, gitleaks, osv-scanner, Conftest)
-.githooks/pre-commit    # Secret scan gate
-.mcp.json               # Serena MCP (read-only)
-.opengrep/              # Custom Opengrep rules
-.specify/ / specs/      # Spec Kit state and feature specifications
-docs/ai-engineering/    # Phase implementation records and runbooks
-model-policy.yaml       # Model routing policy
-policy/                 # Conftest policy rules
-scripts/
-  ai-worktree.mjs       # Worktree helper
-src/                    # Demo app (Astro + React — replace with your project)
+my-project/
+├── .ai/                     # Agent knowledge base
+│   ├── CURRENT.md           # Live session state — start every session here
+│   ├── INDEX.md             # HOT / WARM / COLD knowledge map
+│   ├── CONTEXT.md           # Verified architecture
+│   ├── decisions/           # Architecture decision records
+│   ├── runbooks/            # Handoff and task runbooks
+│   └── tasks/               # Per-task state files (one per branch)
+│
+├── .claude/
+│   ├── settings.json        # Deny / ask / allow rules + Bash sandbox
+│   └── skills/
+│       ├── ponytail/        # /ponytail command (code minimalism)
+│       └── speckit-*/       # /speckit-* slash commands
+│
+├── .codex/                  # Codex profile + command rules
+├── .github/                 # CI: build · gitleaks · osv-scanner · Conftest
+├── .githooks/pre-commit     # Secret scan gate (gitleaks)
+├── .mcp.json                # Serena MCP — read-only semantic navigation
+├── .opengrep/               # Custom static analysis rules
+├── .specify/ / specs/       # Spec Kit state + feature specifications
+├── docs/ai-engineering/     # Phase implementation records and runbooks
+├── model-policy.yaml        # Model routing policy
+├── policy/                  # Conftest OPA policies
+├── scripts/
+│   ├── ai-worktree.mjs      # Worktree helper (new / list / handoff / remove)
+│   └── check-model-policy.mjs
+└── src/                     # Your app (replace with your project)
 ```
 
 ---
 
-## Demo app
+## 📦 Framework phases
 
-The repo ships with a local-first **Astro 7.4 + React 19.3** app that exercises the full build pipeline. It has no cloud database — it reads a local API over `127.0.0.1`. Use it as a starting point or delete `src/` and replace it with your own project.
+Built and documented phase by phase — each phase's evidence is in `docs/ai-engineering/`:
+
+| Phase | Delivers |
+|:---:|---|
+| **2** | Shared `AGENTS.md` + `.ai/` knowledge base (INDEX, CONTEXT, decisions, runbooks) |
+| **3** | Spec Kit 1.2.1 — constitution, feature spec template, Claude Code + Codex integration |
+| **4** | Worktree helper, handoff runbook, multi-agent isolation protocol |
+| **5** | Claude Code guardrails, Codex profile, pre-commit hook, CI pipeline, Dependabot |
+| **6** | Serena MCP (read-only), MCP registry, agent memory lifecycle rules |
+| **7** | Model routing policy, capability catalog, Conftest enforcement, dry-run checker |
+| **+** | Ponytail code minimalism — always-on quality gate for every agent session |
+
+---
+
+## 🔒 Security model
+
+- **Pre-commit:** gitleaks blocks secrets and sensitive file types before they enter git
+- **Claude Code:** deny rules block credential reads, force-push, destructive git ops, and direct API calls
+- **CI:** gitleaks (full history) + osv-scanner (dependencies) + Conftest (policy) on every push and PR
+- **Sandbox:** all Bash runs in an isolated sandbox; network restricted to `registry.npmjs.org`
+- **Agents:** `AGENTS.md` §5 data protection rules + §7 risk table define what requires explicit approval
+
+---
+
+## 🤝 Contributing
 
 ```bash
-npm run dev      # Dev server at http://127.0.0.1:4321
-npm run build    # Production build to dist/
-npm run check    # Astro + TypeScript type check
+# Fork, clone, install
+npm ci && git config core.hooksPath .githooks
+
+# Start your task on an isolated branch
+npm run ai:worktree -- new your-task --agent claude
+
+# Work in the isolated worktree
+cd ../ai-forge-wt/claude-your-task
+
+# Before committing — always
+npm run build
+gitleaks git --staged --redact -v --no-banner .
+
+# Open a PR
 ```
 
----
-
-## Security
-
-- Pre-commit hook blocks secrets and sensitive file types (gitleaks)
-- Claude Code deny rules block credential reads and destructive git operations
-- CI runs gitleaks + osv-scanner + Conftest policy checks on every push
-- All Bash runs sandboxed; network access restricted to `registry.npmjs.org`
-
-Never commit secrets. Run `gitleaks git --staged --redact -v --no-banner .` before every commit.
+Read `AGENTS.md` for the full rule set, risk table, and commit checklist.
 
 ---
 
-## Contributing
-
-1. Fork and clone
-2. `npm ci && git config core.hooksPath .githooks`
-3. Start a task: `npm run ai:worktree -- new your-task --agent claude`
-4. Work in `../ai-forge-wt/claude-your-task`
-5. Run `npm run build` and gitleaks before committing
-6. Open a PR
-
-See `AGENTS.md` for the full agent rules and risk table.
-
----
-
-## License
+## 📄 License
 
 MIT — see [LICENSE](LICENSE).
 
-Built with [Claude Code](https://claude.com/claude-code) and [Codex](https://openai.com/codex).
+---
+
+<div align="center">
+
+Built with [Claude Code](https://claude.com/claude-code) · [Codex](https://openai.com/codex) · [Ponytail](https://github.com/dietrichgebert/ponytail)
+
+**[⭐ Star this repo](https://github.com/iamSachinDev/ai-forge) if it saves you from agent chaos**
+
+</div>

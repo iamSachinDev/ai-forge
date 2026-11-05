@@ -56,6 +56,9 @@ Two AI agents on one repo means overwritten work, drifting instructions, bloated
 | 🔭 | **Serena MCP** | Read-only semantic code navigation — agents see the code, can't corrupt it |
 | ✂️ | **Ponytail** | Always-on minimalism discipline, `/ponytail lite\|full\|ultra` |
 | 🧾 | **Decision records** | ADRs + task files + session summary so context survives between sessions |
+| 📦 | **Devcontainer** | `.devcontainer/` gives the same Node 22 environment everywhere; not a hard sandbox yet |
+| 📡 | **Local observability guide** | Opt-in OpenTelemetry setup, localhost only ([guide](docs/ai-engineering/OBSERVABILITY.md)) |
+| 🚀 | **Start-project guide** | Ordered steps from template to first feature ([START-PROJECT.md](START-PROJECT.md)) |
 
 ---
 
@@ -72,6 +75,8 @@ gitleaks dir --redact -v --no-banner .  # working-tree secret scan
 ```
 
 Then edit **`AGENTS.md` §1 (Project)** and **§3 (Architecture)** for your app. Start every agent session by reading `.ai/CURRENT.md`.
+
+Starting a brand-new project? Follow the step-by-step [**START-PROJECT.md**](START-PROJECT.md).
 
 ---
 
@@ -134,6 +139,8 @@ flowchart LR
 <summary><b>🗂️ Repository layout</b></summary>
 
 ```
+START-PROJECT.md      Step-by-step guide for a new project
+.devcontainer/        Reproducible Node 22 environment
 .ai/                  Agent knowledge base (CURRENT, INDEX, CONTEXT, tasks, decisions, runbooks)
 .claude/              settings.json (permissions + sandbox) and skills (ponytail, speckit-*)
 .codex/               Codex profile and command rules
@@ -188,6 +195,12 @@ ai-forge does not depend on [ECC (Everything Claude Code)](https://github.com/af
 | Repo readiness audit | `ecc:harness-audit` |
 
 ECC is large. ai-forge's ponytail rule applies: install only what you use.
+
+### Also pairs well with
+
+| Tool | What it adds | Notes |
+|---|---|---|
+| [code-review-graph](https://github.com/tirth8205/code-review-graph) (MIT) | Local code knowledge graph served over MCP, so agents read only the files a change touches | Install per project with `uv tool install code-review-graph`. Its `install` command writes agent config files, so review that diff. See [START-PROJECT.md](START-PROJECT.md#code-review-graph-per-project) |
 
 ---
 

@@ -122,8 +122,9 @@ Every commit, docs-only included (the build takes seconds):
 2. Stage explicit paths, then review `git diff --staged`. Everything your change imports or depends on is staged (no leftover untracked files of yours).
 3. `gitleaks git --staged --redact -v --no-banner .` reports no leaks.
 4. `npm run build` exits 0.
-5. Write a `type: summary` message like the history (`feat:`, `fix:`, `chore:`).
-6. After committing, `git status` shows nothing of yours left over.
+5. If you added or changed a skill, plugin, MCP server, script, command, guardrail or other feature, [README.md](README.md) is updated in the same commit ("What ships today", "Roadmap", "Works with", repo layout, and any new guide linked). Docs that lag the repo mislead the next agent.
+6. Write a `type: summary` message like the history (`feat:`, `fix:`, `chore:`).
+7. After committing, `git status` shows nothing of yours left over.
 
 The pre-commit hook repeats step 3 and blocks data and secret file types; if it refuses, fix the cause or ask the maintainer, never `--no-verify`. Before proposing a merge, also run the full-history and working-tree scans (§2). Never skip or disable a check.
 

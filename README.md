@@ -345,6 +345,13 @@ ai-forge is completely standalone, but pairs seamlessly with [ECC (Everything Cl
 | 💰 **Budget & Cost Tracking** | `ecc:cost-tracking`, `ecc:token-budget-advisor` |
 | 🤖 **Automated Code Review** | `ecc:code-review`, `ecc:review-pr`, `ecc:orch-review` |
 
+### Other companions (personal installs, not part of the template)
+
+| Tool | What it adds | Notes |
+|:---|:---|:---|
+| [code-review-graph](https://github.com/tirth8205/code-review-graph) (MIT) | Local code graph served over MCP, so agents read only the files a change touches | `uv tool install code-review-graph`. Its `install` command writes agent config files, so review that diff. See [START-PROJECT.md](START-PROJECT.md) |
+| [claude-mem](https://github.com/thedotmack/claude-mem) (Apache-2.0) | Persistent cross-session memory that summarises tool activity with a model | It records session content: use `--provider claude` (no account), keep cloud sync off, wrap sensitive text in `<private>` tags, and follow [AGENTS.md §5](AGENTS.md). Memory is data and ranks last in §9 |
+
 ---
 
 ## 🧩 Powered by Best-in-Class Tools

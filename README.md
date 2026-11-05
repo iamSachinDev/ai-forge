@@ -1,58 +1,189 @@
-# CardOS
+# ai-forge
 
-A premium local-first Astro frontend for **Burnrate**. Burnrate remains the finance engine (FastAPI, SQLite, statement parsers, Gmail sync, offers, milestones); CardOS replaces the UI.
+> The AI engineering OS for multi-agent software development.
 
-## Features
+[![CI](https://github.com/iamSachinDev/ai-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/iamSachinDev/ai-forge/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js >=22.22](https://img.shields.io/badge/node-%3E%3D22.22.0-brightgreen)](package.json)
 
-- Command Center dashboard
-- Premium visual card wallet
-- Upcoming bill timeline
-- Spend trend + category + merchant analytics
-- Transaction explorer
-- Statement vault / parser status
-- Dark/light theme
-- No cloud database: calls your local Burnrate API
+---
 
-## Requirements
+**ai-forge** is a production-ready template and reference implementation for running Claude Code and Codex safely together on the same codebase. It solves the hard parts: keeping agents out of each other's work, enforcing code quality gates, routing tasks to the right model, and giving every agent the same ground truth — without any cloud dependency.
 
-- Existing Homebrew Burnrate installation (`pratik1235/burnrate/burnrate`)
-- Node.js 20+ and project dependencies (`npm ci` once)
+Clone it, adapt the demo app to your project, and ship with the full framework already in place.
 
-## Run
+---
+
+## What's inside
+
+| Layer | What it does |
+|---|---|
+| **Multi-agent worktrees** | One git branch + worktree per agent task. Agents never share a working tree. `npm run ai:worktree -- new \| list \| handoff \| remove` |
+| **Shared agent rules** | `AGENTS.md` is the single source of truth for both Claude Code and Codex — no config drift between agents |
+| **Spec Kit 1.2.1** | Feature specs with requirement IDs, constitution, and slash-command workflow: `/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, `/speckit-implement` |
+| **Guardrails** | `settings.json` deny/ask/allow rules, Bash sandbox, pre-commit secret scan via gitleaks, CI pipeline |
+| **Model routing** | `model-policy.yaml` + Conftest enforcement — routes tasks to the right model by capability |
+| **Serena MCP** | Read-only semantic code navigation for both agents (no write access) |
+| **Code minimalism** | [Ponytail](https://github.com/dietrichgebert/ponytail) discipline baked into every session — the smallest complete change, always |
+| **Demo app** | Working Astro 7.4 + React 19.3 app to exercise the full framework in a real build |
+
+---
+
+## Quick start
 
 ```bash
-npm run cardos
+# 1. Clone
+git clone git@github.com:iamSachinDev/ai-forge.git my-project
+cd my-project
+
+# 2. Install dependencies
+npm ci
+
+# 3. Enable the pre-commit hook
+git config core.hooksPath .githooks
+
+# 4. Verify the framework
+npm run build          # Astro check + static build — should exit 0
+npm test               # Unit tests
+gitleaks dir --redact -v --no-banner .   # Secret scan
 ```
 
-You can also double-click `start-cardos.command`. The launcher checks the existing Burnrate service, starts it through Homebrew if needed, starts CardOS only if it is not already serving on port 4321, and opens the browser after both APIs respond. `npm run dev` is still available for foreground development.
+Then open `AGENTS.md` and replace §1 (Project) and §3 (Architecture) with your app's details.
 
-CardOS is at `http://127.0.0.1:4321`. Astro proxies `/api/*` to the local Burnrate API, avoiding CORS changes in Burnrate.
+---
 
-## Data
+## Multi-agent workflow
 
-CardOS does not maintain a second finance database. It reads Burnrate endpoints such as `/api/cards`, `/api/statements`, `/api/transactions`, `/api/analytics/*`, and `/api/due-reminders`.
+Each agent gets its own isolated branch and worktree:
 
-The browser fetches fresh API responses at startup and on each page load, refreshes when the tab regains focus, and revalidates every 45 seconds while visible. Processing statements are checked every five seconds. The global Sync button refreshes related datasets together. Financial responses stay in memory only; the browser stores only the theme preference.
+```bash
+# Start a new task (creates branch ai/<agent>/<task> and worktree ../ai-forge-wt/<agent>-<task>)
+npm run ai:worktree -- new my-feature --agent claude
 
-## Gmail sync
+# List active tasks and owners
+npm run ai:worktree -- list
 
-Burnrate can pull statement attachments (PDF, CSV, XLS) from Gmail with read-only access. It needs your own Google OAuth client:
+# Hand off to another agent
+npm run ai:worktree -- handoff my-feature --from claude --to codex
 
-1. In Google Cloud Console, enable the Gmail API, configure the OAuth consent screen with the `gmail.readonly` scope, and add your Gmail address as a test user.
-2. Create an OAuth client ID of type **Web application** with the authorized redirect URI `http://127.0.0.1:8000/api/gmail/oauth/callback`, then download its JSON.
-3. Run `npm run gmail:setup -- ~/Downloads/client_secret_….json` (or run it without a path to paste the ID and secret). It writes Burnrate's `libexec/.env.production` (mode 600), points the OAuth redirect back to CardOS Settings, and restarts the Burnrate service.
-4. Open Settings in CardOS and choose **Connect Gmail**. The first sync runs as soon as Google redirects back.
+# Clean up after merge
+npm run ai:worktree -- remove my-feature
+```
 
-After that, Burnrate syncs Gmail each time its service starts (at most hourly), and **Sync Gmail** in the top bar or **Sync now** in Settings syncs on demand. Each sync scans up to 200 matching emails from the last 120 days and saves new attachments to the watch folder; attachments saved by an earlier sync are skipped. While the consent screen is in Testing, Google expires the connection after 7 days; choose **Reconnect** in Settings, or publish the consent screen for your own use.
+See [.ai/runbooks/handoff.md](.ai/runbooks/handoff.md) for the full handoff protocol.
 
-### Burnrate patch
+---
 
-[patches/burnrate-0.5.2.patch](patches/burnrate-0.5.2.patch) fixes Burnrate 0.5.2 issues found with Gmail sync: duplicate downloads and double processing, the 40-email cap, bank detection for Gmail-named files (ICICI, Standard Chartered, SBI), a Standard Chartered statement parser, password fallbacks, and skipping non-card PDFs (broker, mutual fund, loan, bank account, EMI letters) instead of creating failed rows. To ignore other non-card attachments, set `BURNRATE_IGNORE_FILENAME_REGEX` in Burnrate's `.env.production`.
+## Spec-driven development
 
-`brew upgrade burnrate` replaces the `libexec` folder, which removes both the patch and `.env.production`. Afterwards, reapply the patch with `patch -p0 -d "$(brew --prefix burnrate)/libexec" < patches/burnrate-0.5.2.patch`, rerun `npm run gmail:setup`, and restart the service. If the patch no longer applies to a newer Burnrate, check whether the new version already fixes these issues.
+Every feature starts with a spec, not code:
 
-## Security and local configuration
+```
+/speckit-specify   → creates specs/NNN-feature-name/spec.md
+/speckit-plan      → generates implementation design
+/speckit-tasks     → produces dependency-ordered tasks.md
+/speckit-implement → executes all tasks
+/speckit-converge  → finds and fills any gaps
+```
 
-CardOS has no built-in credentials or financial records. It connects to Burnrate on `127.0.0.1`, and the browser calls the relative `/api/*` routes. Keep account and transaction data in Burnrate's local storage. If Burnrate uses Gmail sync, that integration may contact Gmail when you request a sync.
+Codex users: prefix with `$` instead of `/`.
 
-CardOS currently needs no environment variables. If you add a credential later, keep it in a local `.env` file or Burnrate's backend configuration, never in source code or a client-exposed `PUBLIC_` variable. The `.gitignore` excludes `.env` files and common local financial exports. Astro CLI telemetry is disabled by the project scripts and launcher.
+---
+
+## Code quality gate — ponytail
+
+Every agent session runs under the [ponytail](https://github.com/dietrichgebert/ponytail) discipline (§11 of `AGENTS.md`). Before writing any code, agents must climb the minimalism ladder:
+
+1. Does this need to exist?
+2. Already in the codebase? Use it.
+3. Standard library? Use it.
+4. Installed dependency? Use it.
+5. One line? One line.
+6. Otherwise: the minimum that works.
+
+Claude Code users can switch levels: `/ponytail lite`, `/ponytail full` (default), `/ponytail ultra`.
+
+---
+
+## Framework phases
+
+The framework was built in 7 phases, each documented in `docs/ai-engineering/`:
+
+| Phase | What it delivers |
+|---|---|
+| 2 | Shared `AGENTS.md` rules, `.ai/` knowledge base |
+| 3 | Spec Kit 1.2.1, proposed constitution, first feature spec |
+| 4 | Worktree helper, handoff runbook, multi-agent isolation |
+| 5 | Claude Code guardrails, Codex profile, pre-commit hook, CI |
+| 6 | Serena MCP (read-only), MCP registry, memory lifecycle rules |
+| 7 | Model routing policy, capability catalog, Conftest enforcement |
+| + | Ponytail code minimalism (this release) |
+
+---
+
+## Repository layout
+
+```
+.ai/                    # Agent knowledge base (INDEX, CONTEXT, CURRENT, tasks, decisions)
+.claude/
+  settings.json         # Claude Code deny/ask/allow rules + sandbox
+  skills/
+    ponytail/           # Code minimalism skill (/ponytail command)
+    speckit-*/          # Spec Kit slash commands
+.codex/                 # Codex profile and command rules
+.github/                # CI workflows (build, gitleaks, osv-scanner, Conftest)
+.githooks/pre-commit    # Secret scan gate
+.mcp.json               # Serena MCP (read-only)
+.opengrep/              # Custom Opengrep rules
+.specify/ / specs/      # Spec Kit state and feature specifications
+docs/ai-engineering/    # Phase implementation records and runbooks
+model-policy.yaml       # Model routing policy
+policy/                 # Conftest policy rules
+scripts/
+  ai-worktree.mjs       # Worktree helper
+src/                    # Demo app (Astro + React — replace with your project)
+```
+
+---
+
+## Demo app
+
+The repo ships with a local-first **Astro 7.4 + React 19.3** app that exercises the full build pipeline. It has no cloud database — it reads a local API over `127.0.0.1`. Use it as a starting point or delete `src/` and replace it with your own project.
+
+```bash
+npm run dev      # Dev server at http://127.0.0.1:4321
+npm run build    # Production build to dist/
+npm run check    # Astro + TypeScript type check
+```
+
+---
+
+## Security
+
+- Pre-commit hook blocks secrets and sensitive file types (gitleaks)
+- Claude Code deny rules block credential reads and destructive git operations
+- CI runs gitleaks + osv-scanner + Conftest policy checks on every push
+- All Bash runs sandboxed; network access restricted to `registry.npmjs.org`
+
+Never commit secrets. Run `gitleaks git --staged --redact -v --no-banner .` before every commit.
+
+---
+
+## Contributing
+
+1. Fork and clone
+2. `npm ci && git config core.hooksPath .githooks`
+3. Start a task: `npm run ai:worktree -- new your-task --agent claude`
+4. Work in `../ai-forge-wt/claude-your-task`
+5. Run `npm run build` and gitleaks before committing
+6. Open a PR
+
+See `AGENTS.md` for the full agent rules and risk table.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+Built with [Claude Code](https://claude.com/claude-code) and [Codex](https://openai.com/codex).
